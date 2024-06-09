@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts Account[]
+  invoices Invoice[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Invoice {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  streetFrom   String
+  cityFrom     String
+  postCodeFrom String
+  countryFrom  String
+
+  clientName  String
+  clientEmail String
+  streetTo    String
+  cityTo      String
+  postCodeTo  String
+  countryTo   String
+  invoiceDate DateTime
+  paymentTerm PaymentTerm @default(NET1)
+  description String
+  total       String
+  status      Status      @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items Item[]
+}
+
+model Item {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceId String @db.ObjectId
+
+  name     String
+  quantity String
+  price    String
+  total    String
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+enum Status {
+  PAID
+  PENDING
+  DRAFT
+}
+
+enum PaymentTerm {
+  NET1
+  NET7
+  NET14
+  NET30
+}
